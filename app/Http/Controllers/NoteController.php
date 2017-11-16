@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\User;
 use App\Note;
+use App\Emotion;
 use Illuminate\Http\Request;
 
 class NoteController extends Controller
@@ -59,7 +60,6 @@ class NoteController extends Controller
                 'error_message' => 'Require url, create time, share and content.'
             ]);
         }
-
         $note = new Note;
         $note->user_id = $user->id;
         $note->url = $url;
@@ -71,6 +71,11 @@ class NoteController extends Controller
         }
         $note->content = $content;
         $note->save();
+
+        /*
+        // 记录分析
+        Emotion::NoteAnalysis($note);
+        */
 
         return response()->json([
             'error_code' => 200,
@@ -94,14 +99,13 @@ class NoteController extends Controller
         $url = $request->input('url');
         $share = $request->input('share');
         $content = $request->input('content');
-        
+
         if (is_null($url) or is_null($share) or is_null($content)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require url, share and content.'
             ]);
         }
-
         $note->url = $url;
         if ($share) {
             $note->is_shared = 1;
@@ -110,6 +114,11 @@ class NoteController extends Controller
         }
         $note->content = $content;
         $note->save();
+
+        /*
+        // 记录分析
+        Emotion::NoteAnalysis($note);
+        */
 
         return response()->json([
             'error_code' => 200,
@@ -157,12 +166,14 @@ class NoteController extends Controller
             ['is_deleted', '=', '0'],
             ['is_blocked', '=', '0'],
             //['user_id', '<>', $user->id],
-        ])->inRandomOrder()->skip(5)->take(20)->get();
+        ])->inRandomOrder()->take(20)->get();
+
         $toReturnMeteors = [];
         foreach ($meteors as $key => $meteor) {
             $toReturnMeteors[$key]['id'] = $meteor->id;
             $toReturnMeteors[$key]['url'] = $meteor->url;
             $toReturnMeteors[$key]['create_time'] = $meteor->created_at->toDateTimeString();
+            $toReturnMeteors[$key]['content'] = $meteor->content;
         }
 
         return response()->json([
