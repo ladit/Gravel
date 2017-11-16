@@ -130,11 +130,24 @@ return [
     | Token Expire Seconds
     |--------------------------------------------------------------------------
     |
-    |
+    | User access token expire seconds.
     |
     */
 
     'token_expires_seconds' => 604800,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Qiniu Info
+    |--------------------------------------------------------------------------
+    |
+    | Qiniu Info.
+    |
+    */
+
+    'qiniu_access_key' => env('QINIU_ACCESS_KEY'),
+    'qiniu_secret_key' => env('QINIU_SECRET_KEY'),
+    'qiniu_bucket_name' => env('QINIU_BUCKET_KEY'),
 
     /*
     |--------------------------------------------------------------------------
