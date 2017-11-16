@@ -13,7 +13,7 @@ class CreateArticlesEmotionsTable extends Migration
      */
     public function up()
     {
-        Schema::table('articles_emotions', function (Blueprint $table) {
+        Schema::create('articles_emotions', function (Blueprint $table) {
             $table->increments('id')->unsigned()->comment('文章情绪 id');
             $table->timestamps();
             $table->unsignedInteger('article_id')->comment('文章 id');
@@ -28,8 +28,6 @@ class CreateArticlesEmotionsTable extends Migration
      */
     public function down()
     {
-        Schema::table('articles_emotions', function (Blueprint $table) {
-            //
-        });
+        Schema::dropIfExists('articles_emotions');
     }
 }
