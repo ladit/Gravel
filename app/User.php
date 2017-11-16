@@ -16,4 +16,15 @@ class User extends Model
     {
         return $this->hasMany('App\Note');
     }
+
+    /**
+     * 关联情绪
+     *
+     * @param
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function emotions()
+    {
+        return $this->belongsToMany('App\Emotion', 'users_emotions');
+    }
 }
