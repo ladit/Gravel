@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
+use Qiniu\Auth;
 
 class UserController extends Controller
 {
@@ -28,7 +29,7 @@ class UserController extends Controller
 
         //登录名应为 6 到 20 位的字母、数字、中文组合
         //密码应为 6 到 20 位的字母、数字、符号 “_”、“-” 组合
-        if (!preg_match('/[A-Za-z0-9\x{4e00}-\x{u9fff}]{6,20}/u', $account) or
+        if (!preg_match('/[A-Za-z0-9\x{4e00}-\x{9fff}]{6,20}/u', $account) or
             !preg_match("/^[A-Za-z0-9_\-]{6,20}$/",$password)) {
             return response()->json([
                 'error_code' => 403,
@@ -178,26 +179,22 @@ class UserController extends Controller
      */
     public function getQiniuToken(Request $request, User $user)
     {
+        $accessKey = config('app.qiniu_access_key');
+        $secretKey = config('app.qiniu_secret_key');
+        $bucketName = config('app.qiniu_bucket_name');
+        $auth = new Auth($accessKey, $secretKey);
+        $upToken = $auth->uploadToken($bucketName, null, config('app.token_expires_seconds'));
+        $tokenExpireTime = date('Y-m-d H:i:s',
+            time() + config('app.token_expires_seconds'));
+
         return response()->json([
             'error_code' => 200,
             'data' => [
                 'user_id' => $user->id,
-                'qiniu_token' => $user->qiniu_token,
-                'refresh_token' => $user->qiniu_refresh_token,
-                'expire_time' => $user->qiniu_token_expires_in
+                'qiniu_token' => $upToken,
+                'expire_time' => $tokenExpireTime
             ]
         ]);
-    }
-
-    /**
-     * 更新七牛 Token
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function updateQiniuToken(Request $request, User $user)
-    {
-        //
     }
 
     /**
@@ -218,7 +215,7 @@ class UserController extends Controller
         }
 
         //登录名应为 6 到 20 位的字母、数字、中文组合
-        if (!preg_match('/[A-Za-z0-9\x{4e00}-\x{u9fff}]{6,20}/u', $newAccount)) {
+        if (!preg_match('/[A-Za-z0-9\x{4e00}-\x{9fff}]{6,20}/u', $newAccount)) {
             return response()->json([
                 'error_code' => 403,
                 'error_message' => 'Account format error.'
