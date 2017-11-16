@@ -74,8 +74,8 @@ Route::middleware('auth')->group(function () {
     // 若 all_random=1，返回的都是随机文章，默认值为 1
     Route::get('/users/{user}/articles', 'ArticleController@get');
 
-    // 存储文章
-    Route::put('/users/{user}/articles', 'ArticleController@store');
+    // 更新文章
+    Route::put('/users/{user}/articles/{article}', 'ArticleController@update');
 
     /******** article *********/
 });
