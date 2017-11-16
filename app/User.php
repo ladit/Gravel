@@ -18,6 +18,17 @@ class User extends Model
     }
 
     /**
+     * 关联文章
+     *
+     * @param
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function articles()
+    {
+        return $this->belongsToMany('App\Article', 'users_articles');
+    }
+
+    /**
      * 关联情绪
      *
      * @param
