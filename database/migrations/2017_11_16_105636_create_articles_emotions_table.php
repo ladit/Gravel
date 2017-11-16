@@ -18,6 +18,7 @@ class CreateArticlesEmotionsTable extends Migration
             $table->timestamps();
             $table->unsignedInteger('article_id')->comment('文章 id');
             $table->unsignedInteger('emotion_id')->comment('情绪 id');
+            $table->double('coefficient',8, 2)->default(0.0)->comment('情绪系数');
         });
     }
 

@@ -17,6 +17,7 @@ class CreateEmotionsTable extends Migration
             $table->increments('id')->unsigned()->comment('情绪 id');
             $table->timestamps();
             $table->string('content', 15)->unique()->comment('内容');
+            $table->double('coefficient',8, 2)->default(0.0)->comment('情绪系数');
         });
     }
 
