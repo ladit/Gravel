@@ -20,10 +20,10 @@ class CreateUsersTable extends Migration
             $table->string('password')->comment('密码');
             $table->string('access_token')->default('')->comment('access token');
             $table->string('access_refresh_token')->default('')->comment('access refresh token');
-            $table->timestamp('access_token_expires_in')->default($now = date("Y-m-d H:i:s"))->comment('access token 过期时间');
+            $table->timestamp('access_token_expires_in')->default($now = date('Y-m-d H:i:s'))->comment('access token 过期时间');
             $table->string('qiniu_token')->default('')->comment('qiniu token');
             $table->string('qiniu_refresh_token')->default('')->comment('qiniu refresh token');
-            $table->timestamp('qiniu_token_expires_in')->default($now = date("Y-m-d H:i:s"))->comment('qiniu token 过期时间');
+            $table->timestamp('qiniu_token_expires_in')->default($now = date('Y-m-d H:i:s'))->comment('qiniu token 过期时间');
             $table->string('safe_question', 100)->default('')->comment('密保问题');
             $table->string('safe_question_answer', 50)->default('')->comment('密保问题答案');
             $table->string('mail', 100)->default('')->comment('邮箱');
