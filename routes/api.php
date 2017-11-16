@@ -27,11 +27,8 @@ Route::middleware('auth')->group(function () {
 
     /******** auth *********/
 
-    // 获取上传七牛云 Token
+    // 获取上传七牛云 Token，有效期7天
     Route::get('/users/{user}/qiniu_token', 'UserController@getQiniuToken');
-
-    // 更新七牛 Token
-    Route::put('/users/{user}/qiniu_token', 'UserController@updateQiniuToken');
 
     /******** auth *********/
 
@@ -82,74 +79,3 @@ Route::middleware('auth')->group(function () {
 
     /******** article *********/
 });
-
-
-/******** test *********/
-
-Route::middleware('auth')->get('/users/{user}/test', function (App\User $user) {
-    return response()->json([
-        'error_code' => 200,
-        'data' => [
-            'account' => $user->account
-        ]
-    ]);
-});
-
-Route::post('/test', function (Request $request) {
-    $account = 'ladit';
-    return response()->json([
-        '$tokenExpireTime' => config('app.token_expires_seconds')
-    ]);
-//    $tokenExpireTime = date('Y-m-d H:i:s', time()+604800);
-//    $accessTokenInfo = [
-//        'uniqid' => uniqid('', true),
-//        'account' => $account,
-//        'tokenExpireTime' => $tokenExpireTime
-//    ];
-//    $iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
-//    $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
-//    mcrypt_encrypt(MCRYPT_RIJNDAEL_128, config('APP_KEY'),
-//        implode(',', $accessTokenInfo), MCRYPT_MODE_CBC, $iv);
-    //return $accessTokenInfo;
-//    $refreshTokenInfo = [
-//        'uniqid' => uniqid('', true),
-//        'account' => $account,
-//        'tokenExpireTime' => $tokenExpireTime
-//    ];
-//    $accessToken = base64_encode(implode(',', $accessTokenInfo));
-//    $refreshToken = base64_encode(implode(',', $refreshTokenInfo));
-//    $data = [
-//        '$accessToken' => $accessToken,
-//        '$refreshToken' => $refreshToken,
-//    ];
-//    return $data;
-    //return $request->input('id');
-    //return $request->all();
-    //return $request->header('Authorization');
-
-    //    if ($request->isJson()) {
-    //        //return $request->header('Authorization');
-    //        return $request->id;
-    //    }
-    //return $request->all();
-});
-
-Route::get('/admin', 'AdministratorController@index');
-
-Route::get('/user', 'UserController@index');
-
-Route::get('/users/{user}', function (App\User $user) {
-    return $user;
-});
-
-Route::get('/article', 'ArticleController@index');
-
-Route::get('/emotion', 'EmotionController@index');
-
-Route::get('/note', 'NoteController@index');
-
-Route::get('/notes/{note}', function (App\Note $note) {
-    return $note;
-});
-
-/******** test *********/
