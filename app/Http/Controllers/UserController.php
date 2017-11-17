@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
+use Qiniu\Auth;
 
 class UserController extends Controller
 {
@@ -19,17 +20,17 @@ class UserController extends Controller
         $account = $request->input('account');
         $password = $request->input('password');
 
-        if (empty($account) or empty($password)) {
+        if (is_null($account) or is_null($password)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require account and password.'
             ]);
         }
 
-        //登录名应为 6 到 30 位的字母、数字、中文、符号 “_”、“-” 组合
-        //密码应为 5 到 100 位的字母、数字、符号 “_”、“-” 组合
-        if (!preg_match('/[A-Za-z0-9_\-\x{4e00}-\x{9fa5}]{6,30}/u', $account) or
-            !preg_match("/^[A-Za-z0-9_\-]{5,100}$/",$password)) {
+        //登录名应为 6 到 20 位的字母、数字、中文组合
+        //密码应为 6 到 20 位的字母、数字、符号 “_”、“-” 组合
+        if (!preg_match('/[A-Za-z0-9\x{4e00}-\x{9fff}]{6,20}/u', $account) or
+            !preg_match("/^[A-Za-z0-9_\-]{6,20}$/",$password)) {
             return response()->json([
                 'error_code' => 403,
                 'error_message' => 'Account and password format error.'
@@ -87,7 +88,7 @@ class UserController extends Controller
         $account = $request->input('account');
         $password = $request->input('password');
 
-        if (empty($account) or empty($password)) {
+        if (is_null($account) or is_null($password)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require account and password.'
@@ -107,6 +108,7 @@ class UserController extends Controller
             'data' => [
                 'user_id' => $user->id,
                 'account' => $account,
+                'create_time' => $user->created_at->toDateTimeString(),
                 'access_token' => $user->access_token,
                 'refresh_token' => $user->access_refresh_token,
                 'expire_time' => $user->access_token_expires_in
@@ -177,26 +179,22 @@ class UserController extends Controller
      */
     public function getQiniuToken(Request $request, User $user)
     {
+        $accessKey = config('app.qiniu_access_key');
+        $secretKey = config('app.qiniu_secret_key');
+        $bucketName = config('app.qiniu_bucket_name');
+        $auth = new Auth($accessKey, $secretKey);
+        $upToken = $auth->uploadToken($bucketName, null, config('app.token_expires_seconds'));
+        $tokenExpireTime = date('Y-m-d H:i:s',
+            time() + config('app.token_expires_seconds'));
+
         return response()->json([
             'error_code' => 200,
             'data' => [
                 'user_id' => $user->id,
-                'qiniu_token' => $user->qiniu_token,
-                'refresh_token' => $user->qiniu_refresh_token,
-                'expire_time' => $user->qiniu_token_expires_in
+                'qiniu_token' => $upToken,
+                'expire_time' => $tokenExpireTime
             ]
         ]);
-    }
-
-    /**
-     * 更新七牛 Token
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function updateQiniuToken(Request $request, User $user)
-    {
-        //
     }
 
     /**
@@ -209,15 +207,15 @@ class UserController extends Controller
     {
         $newAccount = $request->account;
 
-        if (empty($newAccount)) {
+        if (is_null($newAccount)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require account.'
             ]);
         }
 
-        //登录名应为 6 到 30 位的字母、数字、中文、符号 “_”、“-” 组合
-        if (!preg_match('/[A-Za-z0-9_\-\x{4e00}-\x{9fa5}]{6,30}/u', $newAccount)) {
+        //登录名应为 6 到 20 位的字母、数字、中文组合
+        if (!preg_match('/[A-Za-z0-9\x{4e00}-\x{9fff}]{6,20}/u', $newAccount)) {
             return response()->json([
                 'error_code' => 403,
                 'error_message' => 'Account format error.'
@@ -255,16 +253,16 @@ class UserController extends Controller
         $oldPassword = $request->old_password;
         $newPassword = $request->new_password;
 
-        if (empty($oldPassword) or empty($newPassword)) {
+        if (is_null($oldPassword) or is_null($newPassword)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require new and old password.'
             ]);
         }
 
-        //密码应为 5 到 100 位的字母、数字、符号 “_”、“-” 组合
-        if (!preg_match("/^[A-Za-z0-9_\-]{5,100}$/",$oldPassword) or
-            !preg_match("/^[A-Za-z0-9_\-]{5,100}$/",$newPassword)) {
+        //密码应为 6 到 20 位的字母、数字、符号 “_”、“-” 组合
+        if (!preg_match("/^[A-Za-z0-9_\-]{6,20}$/",$oldPassword) or
+            !preg_match("/^[A-Za-z0-9_\-]{6,20}$/",$newPassword)) {
             return response()->json([
                 'error_code' => 403,
                 'error_message' => 'Password format error.'
@@ -316,7 +314,7 @@ class UserController extends Controller
     {
         $avatarUrl = $request->avatar_url;
 
-        if (empty($avatarUrl)) {
+        if (is_null($avatarUrl)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require avatar url.'

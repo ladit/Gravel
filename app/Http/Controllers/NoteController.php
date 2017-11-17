@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\User;
 use App\Note;
+use App\Emotion;
 use Illuminate\Http\Request;
 
 class NoteController extends Controller
@@ -17,20 +18,22 @@ class NoteController extends Controller
      */
     public function restore(Request $request, User $user)
     {
-        $notes = $user->notes;
+        $notes = $user->notes()->where([
+            ['is_deleted', '=', '0'],
+            ['is_blocked', '=', '0']
+        ])->get();
         $toReturnNotes = [];
         foreach ($notes as $key => $note) {
-            if (!$note->is_deleted and !$note->is_blocked) {
-                $toReturnNotes[$key]['id'] = $note->id;
-                $toReturnNotes[$key]['url'] = $note->url;
-                $toReturnNotes[$key]['create_time'] = $note->created_at;
-                if ($note->is_shared) {
-                    $toReturnNotes[$key]['share'] = true;
-                } else {
-                    $toReturnNotes[$key]['share'] = false;
-                }
+            $toReturnNotes[$key]['id'] = $note->id;
+            $toReturnNotes[$key]['url'] = $note->url;
+            $toReturnNotes[$key]['create_time'] = $note->created_at->toDateTimeString();
+            if ($note->is_shared) {
+                $toReturnNotes[$key]['share'] = true;
+            } else {
+                $toReturnNotes[$key]['share'] = false;
             }
         }
+
         return response()->json([
             'error_code' => 200,
             'notes' => $toReturnNotes
@@ -46,7 +49,41 @@ class NoteController extends Controller
      */
     public function store(Request $request, User $user)
     {
-        return $user;
+        $url = $request->input('url');
+        $create_time = $request->input('create_time');
+        $share = $request->input('share');
+        $content = $request->input('content');
+
+        if (is_null($url) or is_null($create_time) or is_null($share) or is_null($content)) {
+            return response()->json([
+                'error_code' => 400,
+                'error_message' => 'Require url, create time, share and content.'
+            ]);
+        }
+        $note = new Note;
+        $note->user_id = $user->id;
+        $note->url = $url;
+        $note->created_at = $create_time;
+        if ($share) {
+            $note->is_shared = 1;
+        } else {
+            $note->is_shared = 0;
+        }
+        $note->content = $content;
+        $note->save();
+
+        /*
+        // 记录分析
+        Emotion::NoteAnalysis($note);
+        */
+
+        return response()->json([
+            'error_code' => 200,
+            'notes' => [
+                'id' => $note->id,
+                'url' => $url
+            ]
+        ]);
     }
 
     /**
@@ -59,7 +96,38 @@ class NoteController extends Controller
      */
     public function update(Request $request, User $user, Note $note)
     {
-        //
+        $url = $request->input('url');
+        $share = $request->input('share');
+        $content = $request->input('content');
+
+        if (is_null($url) or is_null($share) or is_null($content)) {
+            return response()->json([
+                'error_code' => 400,
+                'error_message' => 'Require url, share and content.'
+            ]);
+        }
+        $note->url = $url;
+        if ($share) {
+            $note->is_shared = 1;
+        } else {
+            $note->is_shared = 0;
+        }
+        $note->content = $content;
+        $note->save();
+
+        /*
+        // 记录分析
+        Emotion::NoteAnalysis($note);
+        */
+
+        return response()->json([
+            'error_code' => 200,
+            'notes' => [
+                'id' => $note->id,
+                'url' => $url,
+                'share' => $share
+            ]
+        ]);
     }
 
     /**
@@ -72,7 +140,16 @@ class NoteController extends Controller
      */
     public function delete(Request $request, User $user, Note $note)
     {
-        //
+        $note->is_deleted = 1;
+        $note->save();
+
+        return response()->json([
+            'error_code' => 200,
+            'notes' => [
+                'id' => $note->id,
+                'url' => $note->url
+            ]
+        ]);
     }
 
     /**
@@ -84,6 +161,24 @@ class NoteController extends Controller
      */
     public function getMeteors(Request $request, User $user)
     {
-        //
+        $meteors = Note::where([
+            ['is_shared', '=', '1'],
+            ['is_deleted', '=', '0'],
+            ['is_blocked', '=', '0'],
+            //['user_id', '<>', $user->id],
+        ])->inRandomOrder()->take(20)->get();
+
+        $toReturnMeteors = [];
+        foreach ($meteors as $key => $meteor) {
+            $toReturnMeteors[$key]['id'] = $meteor->id;
+            $toReturnMeteors[$key]['url'] = $meteor->url;
+            $toReturnMeteors[$key]['create_time'] = $meteor->created_at->toDateTimeString();
+            $toReturnMeteors[$key]['content'] = $meteor->content;
+        }
+
+        return response()->json([
+            'error_code' => 200,
+            'meteors' => $toReturnMeteors
+        ]);
     }
 }

@@ -20,7 +20,6 @@ class Authenticate
     {
         // body 内容非 JSON、header 无 Authorization 字段、路由路径错误，返回 400
         $requestSegments = $request->segments();
-        //
         if (!$request->isJson() or !$request->header('Authorization')
             or !is_numeric($requestSegments[2])) {
             return response()->json([
