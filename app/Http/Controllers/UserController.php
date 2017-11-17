@@ -17,6 +17,14 @@ class UserController extends Controller
      */
     public function create(Request $request)
     {
+        // header 中 Content-Type 不为 application/json（body 内容非 JSON），返回 400
+        if (!$request->isJson()) {
+            return response()->json([
+                'error_code' => 400,
+                'error_message' => 'If method is not GET, body should be json.'
+            ]);
+        }
+
         $account = $request->input('account');
         $password = $request->input('password');
 
@@ -31,7 +39,7 @@ class UserController extends Controller
             or !$this->check('password', $password)) {
             return response()->json([
                 'error_code' => 403,
-                'error_message' => 'Account and password format error.'
+                'error_message' => 'Account or password format error.'
             ]);
         }
 
@@ -67,6 +75,14 @@ class UserController extends Controller
      */
     public function login(Request $request)
     {
+        // header 中 Content-Type 不为 application/json（body 内容非 JSON），返回 400
+        if (!$request->isJson()) {
+            return response()->json([
+                'error_code' => 400,
+                'error_message' => 'If method is not GET, body should be json.'
+            ]);
+        }
+
         $account = $request->input('account');
         $password = $request->input('password');
 

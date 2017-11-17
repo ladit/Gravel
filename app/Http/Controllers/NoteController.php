@@ -79,7 +79,7 @@ class NoteController extends Controller
 
         return response()->json([
             'error_code' => 200,
-            'notes' => [
+            'note' => [
                 'id' => $note->id,
                 'url' => $url
             ]
@@ -99,37 +99,60 @@ class NoteController extends Controller
         $url = $request->input('url');
         $share = $request->input('share');
         $content = $request->input('content');
-
-        if (!is_null($url)) {
-            $note->url = $url;
+        $changedContent = false;
+        $changedShareStatus = false;
+        $toReturnNote = [];
+        
+        if (!is_null($url) and is_null($content)) {
+            return response()->json([
+                'error_code' => 400,
+                'error_message' => 'Missing content.'
+            ]);
         }
 
-        if (is_null($share)) {
+        if (is_null($url) and !is_null($content)) {
+            return response()->json([
+                'error_code' => 400,
+                'error_message' => 'Missing url.'
+            ]);
+        }
+
+        if (!is_null($url) and !is_null($content)) {
+            $note->url = $url;
+            $note->content = $content;
+            $changedContent = true;
+        }
+        if (!is_null($share)) {
             if ($share) {
                 $note->is_shared = 1;
             } else {
                 $note->is_shared = 0;
             }
+            $changedShareStatus = true;
         }
-
-        if (is_null($content)) {
-            $note->content = $content;
+        
+        if ($changedContent or $changedShareStatus) {
+            $note->save();
+            $toReturnNote['id'] = $note->id;
         }
-
-        $note->save();
 
         /*
         // 记录分析
-        Emotion::NoteAnalysis($note);
+        if ($changedContent) {
+            Emotion::NoteAnalysis($note);
+        }
         */
-
+        
+        if ($changedContent) {
+            $toReturnNote['url'] = $url;
+        }
+        if ($changedShareStatus) {
+            $toReturnNote['share'] = $share;
+        }
+        
         return response()->json([
             'error_code' => 200,
-            'notes' => [
-                'id' => $note->id,
-                'url' => $url,
-                'share' => $share
-            ]
+            'note' => $toReturnNote
         ]);
     }
 
@@ -148,7 +171,7 @@ class NoteController extends Controller
 
         return response()->json([
             'error_code' => 200,
-            'notes' => [
+            'note' => [
                 'id' => $note->id,
                 'url' => $note->url
             ]

@@ -57,7 +57,7 @@ class ArticleController extends Controller
 
         return response()->json([
             'error_code' => 200,
-            'meteors' => $toReturnArticles
+            'articles' => $toReturnArticles
         ]);
     }
 
