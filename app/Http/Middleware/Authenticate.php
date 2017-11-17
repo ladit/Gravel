@@ -19,6 +19,10 @@ class Authenticate
      */
     public function handle(Request $request, Closure $next)
     {
+        $user = $request->user;
+        $requestSegments = $request->segments();
+        $token = $request->header('Authorizations');
+
         // 非 GET 方式，header 中 Content-Type 不为 application/json（body 内容非 JSON），返回 400
         if ($request->method() != 'GET' and !$request->isJson()) {
             return response()->json([
@@ -28,7 +32,6 @@ class Authenticate
         }
 
         // header 无 Authorizations 字段，返回 400
-        $token = $request->header('Authorizations');
         if (!$token) {
             return response()->json([
                 'error_code' => 400,
@@ -36,22 +39,11 @@ class Authenticate
             ]);
         }
 
-        $requestSegments = $request->segments();
-
         // 路由中用户 id 错误，返回 404
         if (!is_numeric($requestSegments[2])) {
             return response()->json([
                 'error_code' => 404,
                 'error_message' => 'User ID error.'
-            ]);
-        }
-
-        // 用户不存在，返回 403
-        $user = $request->user;
-        if (!$user) {
-            return response()->json([
-                'error_code' => 404,
-                'error_message' => 'User does not exist.'
             ]);
         }
 
