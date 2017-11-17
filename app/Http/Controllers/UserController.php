@@ -27,10 +27,8 @@ class UserController extends Controller
             ]);
         }
 
-        //登录名应为 6 到 20 位的字母、数字、中文组合
-        //密码应为 6 到 20 位的字母、数字、符号 “_”、“-” 组合
-        if (!preg_match('/[A-Za-z0-9\x{4e00}-\x{9fff}]{6,20}/u', $account) or
-            !preg_match("/^[A-Za-z0-9_\-]{6,20}$/",$password)) {
+        if (!$this->check('account', $account)
+            or !$this->check('password', $password)) {
             return response()->json([
                 'error_code' => 403,
                 'error_message' => 'Account and password format error.'
@@ -45,28 +43,12 @@ class UserController extends Controller
             ]);
         }
 
-        $tokenExpireTime = date('Y-m-d H:i:s',
-            time() + config('app.token_expires_seconds'));
-        $accessTokenInfo = [
-            'uniqid' => uniqid('', true),
-            'account' => $account,
-            'tokenExpireTime' => $tokenExpireTime
-        ];
-        $refreshTokenInfo = [
-            'uniqid' => uniqid('', true),
-            'account' => $account,
-            'tokenExpireTime' => $tokenExpireTime
-        ];
-        $accessToken = base64_encode(implode(',', $accessTokenInfo));
-        $refreshToken = base64_encode(implode(',', $refreshTokenInfo));
-
         $user = new User;
         $user->account = $account;
         $user->password = Hash::make($password);
-        $user->access_token = $accessToken;
-        $user->access_refresh_token = $refreshToken;
-        $user->access_token_expires_in = $tokenExpireTime;
         $user->save();
+
+        $this->refreshToken($user);
 
         return response()->json([
             'error_code' => 200,
@@ -96,10 +78,17 @@ class UserController extends Controller
         }
 
         $user = User::where('account', $account)->first();
-        if (!$user or !Hash::check($password, $user->password)) {
+        if (!$user) {
+            return response()->json([
+                'error_code' => 403,
+                'error_message' => 'User not exist.'
+            ]);
+        }
+
+        if (!Hash::check($password, $user->password)) {
             return response()->json([
                 'error_code' => 401,
-                'error_message' => 'Account or password error.'
+                'error_message' => 'Wrong password.'
             ]);
         }
 
@@ -124,49 +113,15 @@ class UserController extends Controller
      */
     public function updateAccessToken(Request $request, User $user)
     {
-        $refresh_token = $request->header('Authorization');
-
-        if (!$user) {
-            return response()->json([
-                'error_code' => 403,
-                'error_message' => 'User not exist.'
-            ]);
-        }
-
-        if ($refresh_token != $user->access_refresh_token) {
-            return response()->json([
-                'error_code' => 401,
-                'error_message' => 'Wrong refresh token.'
-            ]);
-        }
-
-        $tokenExpireTime = date('Y-m-d H:i:s',
-            time() + config('app.token_expires_seconds'));
-        $accessTokenInfo = [
-            'uniqid' => uniqid('', true),
-            'account' => $user->account,
-            'tokenExpireTime' => $tokenExpireTime
-        ];
-        $refreshTokenInfo = [
-            'uniqid' => uniqid('', true),
-            'account' => $user->account,
-            'tokenExpireTime' => $tokenExpireTime
-        ];
-        $accessToken = base64_encode(implode(',', $accessTokenInfo));
-        $refreshToken = base64_encode(implode(',', $refreshTokenInfo));
-
-        $user->access_token = $accessToken;
-        $user->access_refresh_token = $refreshToken;
-        $user->access_token_expires_in = $tokenExpireTime;
-        $user->save();
+        $tokenInfo = $this->refreshToken($user);
 
         return response()->json([
             'error_code' => 200,
             'data' => [
                 'user_id' => $user->id,
-                'access_token' => $accessToken,
-                'refresh_token' => $refreshToken,
-                'expire_time' => $tokenExpireTime
+                'access_token' => $tokenInfo['access_token'],
+                'refresh_token' => $tokenInfo['refresh_token'],
+                'expire_time' => $tokenInfo['expire_time']
             ]
         ]);
     }
@@ -214,8 +169,7 @@ class UserController extends Controller
             ]);
         }
 
-        //登录名应为 6 到 20 位的字母、数字、中文组合
-        if (!preg_match('/[A-Za-z0-9\x{4e00}-\x{9fff}]{6,20}/u', $newAccount)) {
+        if (!$this->check('account', $newAccount)) {
             return response()->json([
                 'error_code' => 403,
                 'error_message' => 'Account format error.'
@@ -260,9 +214,8 @@ class UserController extends Controller
             ]);
         }
 
-        //密码应为 6 到 20 位的字母、数字、符号 “_”、“-” 组合
-        if (!preg_match("/^[A-Za-z0-9_\-]{6,20}$/",$oldPassword) or
-            !preg_match("/^[A-Za-z0-9_\-]{6,20}$/",$newPassword)) {
+        if (!$this->check('password', $oldPassword) or
+            !$this->check('password', $newPassword)) {
             return response()->json([
                 'error_code' => 403,
                 'error_message' => 'Password format error.'
@@ -338,5 +291,73 @@ class UserController extends Controller
                 'avatar_url' =>$avatarUrl
             ]
         ]);
+    }
+
+    /**
+     * 生成用户 Token、刷新 Token、Token 过期时间
+     *
+     * @param  User  $user
+     * @return array $tokenInfo
+     */
+    public function refreshToken(User $user)
+    {
+        $tokenExpireTime = date('Y-m-d H:i:s',
+            time() + config('app.token_expires_seconds'));
+        $accessTokenInfo = [
+            'uniqid' => uniqid('', true),
+            'account' => $user->account,
+            'tokenExpireTime' => $tokenExpireTime
+        ];
+        $refreshTokenInfo = [
+            'uniqid' => uniqid('', true),
+            'account' => $user->account,
+            'tokenExpireTime' => $tokenExpireTime
+        ];
+        $accessToken = base64_encode(implode(',', $accessTokenInfo));
+        $refreshToken = base64_encode(implode(',', $refreshTokenInfo));
+
+        $user->access_token = $accessToken;
+        $user->access_refresh_token = $refreshToken;
+        $user->access_token_expires_in = $tokenExpireTime;
+        $user->save();
+
+        $tokenInfo = [
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshToken,
+            'expire_time' => $tokenExpireTime
+        ];
+        return $tokenInfo;
+    }
+
+    /**
+     * 格式检查
+     *
+     * @param string $action
+     * @param mixed $data
+     * @return bool
+     */
+    public function check($action, $data)
+    {
+        switch ($action) {
+            case 'account':
+                //登录名应为 6 到 20 位的字母、数字、中文组合
+                if (preg_match('/[A-Za-z0-9\x{4e00}-\x{9fff}]{6,20}/u', $data)) {
+                    return true;
+                }
+                return false;
+                break;
+
+            case 'password':
+                //密码应为 6 到 20 位的字母、数字、符号 “_”、“-” 组合
+                if (preg_match('/^[A-Za-z0-9_\-]{6,20}$/', $data)) {
+                    return true;
+                }
+                return false;
+                break;
+
+            default:
+
+                break;
+        }
     }
 }
