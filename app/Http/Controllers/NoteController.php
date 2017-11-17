@@ -100,19 +100,22 @@ class NoteController extends Controller
         $share = $request->input('share');
         $content = $request->input('content');
 
-        if (is_null($url) or is_null($share) or is_null($content)) {
-            return response()->json([
-                'error_code' => 400,
-                'error_message' => 'Require url, share and content.'
-            ]);
+        if (!is_null($url)) {
+            $note->url = $url;
         }
-        $note->url = $url;
-        if ($share) {
-            $note->is_shared = 1;
-        } else {
-            $note->is_shared = 0;
+
+        if (is_null($share)) {
+            if ($share) {
+                $note->is_shared = 1;
+            } else {
+                $note->is_shared = 0;
+            }
         }
-        $note->content = $content;
+
+        if (is_null($content)) {
+            $note->content = $content;
+        }
+
         $note->save();
 
         /*
