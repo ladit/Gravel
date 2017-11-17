@@ -340,16 +340,16 @@ class UserController extends Controller
     {
         switch ($action) {
             case 'account':
-                //登录名应为 6 到 20 位的字母、数字、中文组合
-                if (preg_match('/[A-Za-z0-9\x{4e00}-\x{9fff}]{6,20}/u', $data)) {
+                //登录名应为 6 到 20 位的字母、数字、下划线、中文组合，且以字母或中文作为第一个字符
+                if (preg_match('/^[[:alpha:]\x{4e00}-\x{9fa5}][\-\w\x{4e00}-\x{9fa5}]{5,19}$/u', $data)) {
                     return true;
                 }
                 return false;
                 break;
 
             case 'password':
-                //密码应为 6 到 20 位的字母、数字、符号 “_”、“-” 组合
-                if (preg_match('/^[A-Za-z0-9_\-]{6,20}$/', $data)) {
+                //密码应为 6 到 20 位的字母、数字、符号~!@#$%^&*()_=+|,.?:;'"{}[]-/\组合
+                if (preg_match('/^[~!@#$%^&*()_=+|,.?:;\'"{}[\]\-\/\\\\\w]{6,20}$/', $data)) {
                     return true;
                 }
                 return false;
