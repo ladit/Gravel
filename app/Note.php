@@ -12,7 +12,7 @@ class Note extends Model
      * @param
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function notes()
+    public function user()
     {
         return $this->belongsTo('App\User');
     }

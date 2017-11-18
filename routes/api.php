@@ -19,13 +19,12 @@ Route::post('/user/registration', 'UserController@create');
 // 登录
 Route::put('/user/login', 'UserController@login');
 
-// 更新用户 Token
-Route::put('/users/{user}/access_token', 'UserController@updateAccessToken');
-
 // 需要验证
 Route::middleware('auth')->group(function () {
 
     /******** auth *********/
+    // 更新用户 Token
+    Route::put('/users/{user}/access_token', 'UserController@updateAccessToken');
 
     // 获取上传七牛云 Token，有效期7天
     Route::get('/users/{user}/qiniu_token', 'UserController@getQiniuToken');
