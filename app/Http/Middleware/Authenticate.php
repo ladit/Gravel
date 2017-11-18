@@ -21,7 +21,7 @@ class Authenticate
     {
         $user = $request->user;
         $requestSegments = $request->segments();
-        $token = $request->header('Authorizations');
+        $token = $request->header('Authorization');
 
         // 非 GET 方式，header 中 Content-Type 不为 application/json（body 内容非 JSON），返回 400
         if ($request->method() != 'GET' and !$request->isJson()) {
@@ -31,11 +31,11 @@ class Authenticate
             ]);
         }
 
-        // header 无 Authorizations 字段，返回 400
+        // header 无 Authorization 字段，返回 400
         if (!$token) {
             return response()->json([
                 'error_code' => 400,
-                'error_message' => 'Require Authorizations in header.'
+                'error_message' => 'Require Authorization in header.'
             ]);
         }
 
