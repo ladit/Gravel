@@ -357,7 +357,7 @@ class UserController extends Controller
         switch ($action) {
             case 'account':
                 //登录名应为 6 到 20 位的字母、数字、下划线、中文组合，且以字母或中文作为第一个字符
-                if (preg_match('/^[[:alpha:]\x{4e00}-\x{9fa5}][\-\w\x{4e00}-\x{9fa5}]{5,19}$/u', $data)) {
+                if (preg_match('/^[[:alpha:]\x{4e00}-\x{9fa5}][\-\w\x{4e00}-\x{9fa5}]{2,19}$/u', $data)) {
                     return true;
                 }
                 return false;
