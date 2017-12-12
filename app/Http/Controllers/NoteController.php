@@ -12,8 +12,8 @@ class NoteController extends Controller
     /**
      * 恢复记录
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\User  $user
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\User $user
      * @return \Illuminate\Http\Response
      */
     public function restore(Request $request, User $user)
@@ -43,8 +43,8 @@ class NoteController extends Controller
     /**
      * 存储记录
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\User  $user
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\User $user
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request, User $user)
@@ -92,9 +92,9 @@ class NoteController extends Controller
     /**
      * 修改记录
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\User  $user
-     * @param  \App\Note  $note
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\User $user
+     * @param  \App\Note $note
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, User $user, Note $note)
@@ -141,7 +141,7 @@ class NoteController extends Controller
             }
             $changedShareStatus = true;
         }
-        
+
         if ($changedContent or $changedShareStatus) {
             $note->save();
             $toReturnNote['id'] = $note->id;
@@ -153,14 +153,14 @@ class NoteController extends Controller
             Emotion::NoteAnalysis($note);
         }
         */
-        
+
         if ($changedContent) {
             $toReturnNote['url'] = $url;
         }
         if ($changedShareStatus) {
             $toReturnNote['share'] = $share;
         }
-        
+
         return response()->json([
             'error_code' => 200,
             'note' => $toReturnNote
@@ -170,9 +170,9 @@ class NoteController extends Controller
     /**
      * 删除记录
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\User  $user
-     * @param  \App\Note  $note
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\User $user
+     * @param  \App\Note $note
      * @return \Illuminate\Http\Response
      */
     public function delete(Request $request, User $user, Note $note)
@@ -192,8 +192,8 @@ class NoteController extends Controller
     /**
      * 获取流星
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\User  $user
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\User $user
      * @return \Illuminate\Http\Response
      */
     public function getMeteors(Request $request, User $user)
@@ -239,10 +239,10 @@ class NoteController extends Controller
 
             case 'bool':
                 // 检查是否 bool 类型
-                if(is_null($data)) {
+                if (is_null($data)) {
                     return 'null';
                 }
-                if(!is_bool($data)) {
+                if (!is_bool($data)) {
                     return 'NotNullNotBool';
                 }
                 return true;
@@ -250,7 +250,7 @@ class NoteController extends Controller
 
             case 'timestamp':
                 // 字符串为 timestamp
-                if(strtotime(date('m-d-Y H:i:s',$data)) === $data) {
+                if (date('Y-m-d H:i:s', strtotime($data)) === $data) {
                     return true;
                 }
                 return false;

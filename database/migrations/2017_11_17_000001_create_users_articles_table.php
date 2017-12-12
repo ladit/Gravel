@@ -18,7 +18,7 @@ class CreateUsersArticlesTable extends Migration
             $table->timestamps();
             $table->unsignedInteger('user_id')->comment('用户 id');
             $table->unsignedInteger('article_id')->comment('文章 id');
-            $table->double('coefficient',8, 2)->default(0.0)->comment('匹配系数');
+            $table->double('coefficient', 8, 2)->default(0.0)->comment('匹配系数');
         });
     }
 

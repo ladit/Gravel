@@ -18,7 +18,7 @@ class CreateNotesEmotionsTable extends Migration
             $table->timestamps();
             $table->unsignedInteger('note_id')->comment('记录 id');
             $table->unsignedInteger('emotion_id')->comment('情绪 id');
-            $table->double('coefficient',8, 2)->default(0.0)->comment('情绪系数');
+            $table->double('coefficient', 8, 2)->default(0.0)->comment('情绪系数');
         });
     }
 

@@ -12,7 +12,7 @@ class UserController extends Controller
     /**
      * 注册账号
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function create(Request $request)
@@ -71,7 +71,7 @@ class UserController extends Controller
     /**
      * 登录账号
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function login(Request $request)
@@ -126,7 +126,7 @@ class UserController extends Controller
     /**
      * 更新用户 Token
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function updateAccessToken(Request $request, User $user)
@@ -166,7 +166,7 @@ class UserController extends Controller
     /**
      * 获取上传七牛云 Token
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function getQiniuToken(Request $request, User $user)
@@ -192,7 +192,7 @@ class UserController extends Controller
     /**
      * 修改用户名
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function updateAccount(Request $request, User $user)
@@ -236,7 +236,7 @@ class UserController extends Controller
     /**
      * 修改密码
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function updatePassword(Request $request, User $user)
@@ -281,7 +281,7 @@ class UserController extends Controller
     /**
      * 获取头像 URL
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function getAvatarUrl(Request $request, User $user)
@@ -290,7 +290,7 @@ class UserController extends Controller
             'error_code' => 200,
             'data' => [
                 'user_id' => $user->id,
-                'avatar_url' =>$user->avatar_url
+                'avatar_url' => $user->avatar_url
             ]
         ]);
     }
@@ -298,7 +298,7 @@ class UserController extends Controller
     /**
      * 修改头像 URL
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function updateAvatarUrl(Request $request, User $user)
@@ -326,7 +326,7 @@ class UserController extends Controller
             'error_code' => 200,
             'data' => [
                 'user_id' => $user->id,
-                'avatar_url' =>$avatarUrl
+                'avatar_url' => $avatarUrl
             ]
         ]);
     }
@@ -334,7 +334,7 @@ class UserController extends Controller
     /**
      * 生成用户 Token、刷新 Token、Token 过期时间
      *
-     * @param  User  $user
+     * @param  User $user
      * @return array $tokenInfo
      */
     public function refreshToken(User $user)
