@@ -54,7 +54,10 @@ class NoteController extends Controller
         $share = $request->input('share');
         $content = $request->input('content');
 
-        if (is_null($url) or is_null($create_time) or is_null($share) or is_null($content)) {
+        if (!$this->check('string', $url)
+            or !$this->check('timestamp', $create_time)
+            or !$this->check('string', $content)
+            or $this->check('bool', $share) !== true) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require url, create time, share and content.'
@@ -64,9 +67,9 @@ class NoteController extends Controller
         $note->user_id = $user->id;
         $note->url = $url;
         $note->created_at = $create_time;
-        if ($share) {
+        if ($share === true) {
             $note->is_shared = 1;
-        } else {
+        } elseif ($share === false) {
             $note->is_shared = 0;
         }
         $note->content = $content;
@@ -102,30 +105,38 @@ class NoteController extends Controller
         $changedContent = false;
         $changedShareStatus = false;
         $toReturnNote = [];
-        
-        if (!is_null($url) and is_null($content)) {
+
+        if ($this->check('string', $url) and !$this->check('string', $content)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Missing content.'
             ]);
         }
 
-        if (is_null($url) and !is_null($content)) {
+        if (!$this->check('string', $url) and $this->check('string', $content)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Missing url.'
             ]);
         }
 
-        if (!is_null($url) and !is_null($content)) {
+        if ($this->check('bool', $share) === 'NotNullNotBool') {
+            return response()->json([
+                'error_code' => 400,
+                'error_message' => 'If exists, share should be bool.'
+            ]);
+        }
+
+        if ($this->check('string', $url) and $this->check('string', $content)) {
             $note->url = $url;
             $note->content = $content;
             $changedContent = true;
         }
-        if (!is_null($share)) {
-            if ($share) {
+
+        if ($this->check('bool', $share) === true) {
+            if ($share === true) {
                 $note->is_shared = 1;
-            } else {
+            } elseif ($share === false) {
                 $note->is_shared = 0;
             }
             $changedShareStatus = true;
@@ -206,5 +217,48 @@ class NoteController extends Controller
             'error_code' => 200,
             'meteors' => $toReturnMeteors
         ]);
+    }
+
+    /**
+     * 格式检查
+     *
+     * @param string $action
+     * @param mixed $data
+     * @return bool
+     */
+    public function check($action, $data)
+    {
+        switch ($action) {
+            case 'string':
+                // 字符串为 null 或 ""
+                if (is_null($data) or strlen($data) === 0) {
+                    return false;
+                }
+                return true;
+                break;
+
+            case 'bool':
+                // 检查是否 bool 类型
+                if(is_null($data)) {
+                    return 'null';
+                }
+                if(!is_bool($data)) {
+                    return 'NotNullNotBool';
+                }
+                return true;
+                break;
+
+            case 'timestamp':
+                // 字符串为 timestamp
+                if(strtotime(date('m-d-Y H:i:s',$data)) === $data) {
+                    return true;
+                }
+                return false;
+                break;
+
+            default:
+
+                break;
+        }
     }
 }

@@ -75,8 +75,11 @@ class ArticleController extends Controller
         $title = $request->input('title');
         $content = $request->input('content');
 
-        if (is_null($url) or is_null($publish_time) or is_null($author)
-            or is_null($title) or is_null($content)) {
+        if (!$this->check('string', $url)
+            or !$this->check('string', $publish_time)
+            or !$this->check('string', $author)
+            or !$this->check('string', $title)
+            or !$this->check('string', $content)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require url, publish time, author, title and content.'
@@ -113,5 +116,48 @@ class ArticleController extends Controller
                 'url' => $url
             ]
         ]);
+    }
+
+    /**
+     * 格式检查
+     *
+     * @param string $action
+     * @param mixed $data
+     * @return bool
+     */
+    public function check($action, $data)
+    {
+        switch ($action) {
+            case 'string':
+                // 字符串为 null 或 ""
+                if (is_null($data) or strlen($data) === 0) {
+                    return false;
+                }
+                return true;
+                break;
+
+            case 'bool':
+                // 检查是否 bool 类型
+                if(is_null($data)) {
+                    return 'null';
+                }
+                if(!is_bool($data)) {
+                    return 'NotNullNotBool';
+                }
+                return true;
+                break;
+
+            case 'timestamp':
+                // 字符串为 timestamp
+                if(strtotime(date('m-d-Y H:i:s',$data)) === $data) {
+                    return true;
+                }
+                return false;
+                break;
+
+            default:
+
+                break;
+        }
     }
 }

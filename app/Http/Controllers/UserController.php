@@ -28,7 +28,8 @@ class UserController extends Controller
         $account = $request->input('account');
         $password = $request->input('password');
 
-        if (is_null($account) or is_null($password)) {
+        if (!$this->check('string', $account)
+            or !$this->check('string', $password)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require account and password.'
@@ -86,7 +87,8 @@ class UserController extends Controller
         $account = $request->input('account');
         $password = $request->input('password');
 
-        if (is_null($account) or is_null($password)) {
+        if (!$this->check('string', $account)
+            or !$this->check('string', $password)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require account and password.'
@@ -129,6 +131,25 @@ class UserController extends Controller
      */
     public function updateAccessToken(Request $request, User $user)
     {
+        $refreshToken = $request->header('Authorization');
+        // Refresh token 验证
+        if ($refreshToken != $user->access_refresh_token) {
+            return response()->json([
+                'error_code' => 401,
+                'error_message' => 'Wrong access refresh token.'
+            ]);
+        }
+
+        // 检查 Refresh token 过期（14 天过期）
+        if (strtotime($user->access_token_expires_in)
+            + config('app.token_expires_seconds') < time()) {
+            $this->refreshToken($user);
+            return response()->json([
+                'error_code' => 403,
+                'error_message' => 'Refresh token expired.'
+            ]);
+        }
+
         $tokenInfo = $this->refreshToken($user);
 
         return response()->json([
@@ -178,7 +199,7 @@ class UserController extends Controller
     {
         $newAccount = $request->account;
 
-        if (is_null($newAccount)) {
+        if (!$this->check('string', $newAccount)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require account.'
@@ -223,15 +244,16 @@ class UserController extends Controller
         $oldPassword = $request->old_password;
         $newPassword = $request->new_password;
 
-        if (is_null($oldPassword) or is_null($newPassword)) {
+        if (!$this->check('string', $oldPassword)
+            or !$this->check('string', $newPassword)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require new and old password.'
             ]);
         }
 
-        if (!$this->check('password', $oldPassword) or
-            !$this->check('password', $newPassword)) {
+        if (!$this->check('password', $oldPassword)
+            or !$this->check('password', $newPassword)) {
             return response()->json([
                 'error_code' => 403,
                 'error_message' => 'Password format error.'
@@ -283,7 +305,7 @@ class UserController extends Controller
     {
         $avatarUrl = $request->avatar_url;
 
-        if (is_null($avatarUrl)) {
+        if (!$this->check('string', $avatarUrl)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require avatar url.'
@@ -355,6 +377,14 @@ class UserController extends Controller
     public function check($action, $data)
     {
         switch ($action) {
+            case 'string':
+                // 字符串为 null 或 ""
+                if (is_null($data) or strlen($data) === 0) {
+                    return false;
+                }
+                return true;
+                break;
+
             case 'account':
                 //登录名应为 6 到 20 位的字母、数字、下划线、中文组合，且以字母或中文作为第一个字符
                 if (preg_match('/^[[:alpha:]\x{4e00}-\x{9fa5}][\-\w\x{4e00}-\x{9fa5}]{2,19}$/u', $data)) {
