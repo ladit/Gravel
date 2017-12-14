@@ -31,6 +31,15 @@ Route::middleware('auth')->group(function () {
 
     /******** auth *********/
 
+    /******** message *********/
+
+    // 获取新消息
+    // /users/:id/messages?all=0
+    // 若 all=1，返回所有历史消息，默认值为 0
+    Route::get('/users/{user}/messages', 'UserController@getMessages');
+
+    /******** message *********/
+
     /******** user *********/
 
     // 修改用户名
@@ -50,6 +59,10 @@ Route::middleware('auth')->group(function () {
     /******** note *********/
 
     // 恢复记录
+    // /users/:id/notes?all=0&year=2017&month=12&day=05
+    // 若 all=1，返回所有记录
+    // 若 all=0，返回 year、month、day 指定的记录，年4位，月日2位
+    // all 默认值为 0
     Route::get('/users/{user}/notes', 'NoteController@restore');
 
     // 存储记录
@@ -64,17 +77,29 @@ Route::middleware('auth')->group(function () {
     // 获取流星
     Route::get('/users/{user}/meteors', 'NoteController@getMeteors');
 
+    // 点亮流星
+    Route::put('/users/{user}/meteors/{note}/upvotation', 'NoteController@upvoteMeteor');
+
+    // 举报流星
+    Route::put('/users/{user}/meteors/{note}/report', 'NoteController@reportMeteor');
+
     /******** note *********/
 
     /******** article *********/
 
     // 获取文章
-    // /users/:id/articles?all_random=1
-    // 若 all_random=1，返回的都是随机文章，默认值为 1
+    // /users/:id/articles?favorite=0&all_random=1
+    // 若 favorite=1，无视 all_random 参数，返回收藏的文章，默认值为 0
+    // 若 all_random=0，返回推荐的文章
+    // 若 all_random=1，返回的都是随机文章
+    // all_random 默认值为 1
     Route::get('/users/{user}/articles', 'ArticleController@get');
 
     // 更新文章
     Route::put('/users/{user}/articles/{article}', 'ArticleController@update');
+
+    // 收藏文章
+    Route::put('/users/{user}/articles/{article}/favorite', 'ArticleController@favorite');
 
     /******** article *********/
 });
