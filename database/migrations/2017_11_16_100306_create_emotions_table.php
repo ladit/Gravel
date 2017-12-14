@@ -16,8 +16,8 @@ class CreateEmotionsTable extends Migration
         Schema::create('emotions', function (Blueprint $table) {
             $table->increments('id')->unsigned()->comment('情绪 id');
             $table->timestamps();
+            $table->double('coefficient', 8, 2)->default(0.0)->comment('情绪系数');
             $table->string('content', 15)->unique()->comment('内容');
-            $table->double('coefficient',8, 2)->default(0.0)->comment('情绪系数');
         });
     }
 

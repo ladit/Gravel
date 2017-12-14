@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\User;
+use App\Message;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use Qiniu\Auth;
@@ -12,7 +13,7 @@ class UserController extends Controller
     /**
      * 注册账号
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function create(Request $request)
@@ -28,7 +29,8 @@ class UserController extends Controller
         $account = $request->input('account');
         $password = $request->input('password');
 
-        if (is_null($account) or is_null($password)) {
+        if (!$this->check('string', $account)
+            or !$this->check('string', $password)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require account and password.'
@@ -70,7 +72,7 @@ class UserController extends Controller
     /**
      * 登录账号
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function login(Request $request)
@@ -86,7 +88,8 @@ class UserController extends Controller
         $account = $request->input('account');
         $password = $request->input('password');
 
-        if (is_null($account) or is_null($password)) {
+        if (!$this->check('string', $account)
+            or !$this->check('string', $password)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require account and password.'
@@ -124,11 +127,30 @@ class UserController extends Controller
     /**
      * 更新用户 Token
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function updateAccessToken(Request $request, User $user)
     {
+        $refreshToken = $request->header('Authorization');
+        // Refresh token 验证
+        if ($refreshToken != $user->access_refresh_token) {
+            return response()->json([
+                'error_code' => 401,
+                'error_message' => 'Wrong access refresh token.'
+            ]);
+        }
+
+        // 检查 Refresh token 过期（14 天过期）
+        if (strtotime($user->access_token_expires_in)
+            + config('app.token_expires_seconds') < time()) {
+            $this->refreshToken($user);
+            return response()->json([
+                'error_code' => 403,
+                'error_message' => 'Refresh token expired.'
+            ]);
+        }
+
         $tokenInfo = $this->refreshToken($user);
 
         return response()->json([
@@ -145,7 +167,7 @@ class UserController extends Controller
     /**
      * 获取上传七牛云 Token
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function getQiniuToken(Request $request, User $user)
@@ -169,16 +191,62 @@ class UserController extends Controller
     }
 
     /**
+     * 获取新消息
+     * /users/:id/messages?all=0
+     * 若 all=1，返回所有历史消息，默认值为 0
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function getMessages(Request $request, User $user)
+    {
+        $upvotedMessages = [];
+        $reportedMessages = [];
+        $wantAll = $request->query('all', '0');
+        if ($wantAll == 1) {
+            $messages = Message::where('user_id', $user->id)->get();
+        } else {
+            $messages = Message::where([
+                ['user_id', '=', $user->id],
+                ['is_sent', '=', '0'],
+            ])->get();
+        }
+
+        $i = 0;
+        $j = 0;
+        foreach ($messages as $key => $message) {
+            if ($message->is_upvoted == 1) {
+                $upvotedMessages[$i]['note_id'] = $message->note_id;
+                $upvotedMessages[$i]['create_time'] = $message->created_at->toDateTimeString();
+                $i++;
+            }
+            if ($message->is_reported == 1) {
+                $reportedMessages[$j]['note_id'] = $message->note_id;
+                $reportedMessages[$j]['create_time'] = $message->created_at->toDateTimeString();
+                $j++;
+            }
+            $message->is_sent = 1;
+            $message->save();
+        }
+
+        return response()->json([
+            'error_code' => 200,
+            'upvoted' => $upvotedMessages,
+            'reported' => $reportedMessages
+        ]);
+    }
+
+    /**
      * 修改用户名
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function updateAccount(Request $request, User $user)
     {
         $newAccount = $request->account;
 
-        if (is_null($newAccount)) {
+        if (!$this->check('string', $newAccount)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require account.'
@@ -215,7 +283,7 @@ class UserController extends Controller
     /**
      * 修改密码
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function updatePassword(Request $request, User $user)
@@ -223,15 +291,16 @@ class UserController extends Controller
         $oldPassword = $request->old_password;
         $newPassword = $request->new_password;
 
-        if (is_null($oldPassword) or is_null($newPassword)) {
+        if (!$this->check('string', $oldPassword)
+            or !$this->check('string', $newPassword)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require new and old password.'
             ]);
         }
 
-        if (!$this->check('password', $oldPassword) or
-            !$this->check('password', $newPassword)) {
+        if (!$this->check('password', $oldPassword)
+            or !$this->check('password', $newPassword)) {
             return response()->json([
                 'error_code' => 403,
                 'error_message' => 'Password format error.'
@@ -259,7 +328,7 @@ class UserController extends Controller
     /**
      * 获取头像 URL
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function getAvatarUrl(Request $request, User $user)
@@ -268,7 +337,7 @@ class UserController extends Controller
             'error_code' => 200,
             'data' => [
                 'user_id' => $user->id,
-                'avatar_url' =>$user->avatar_url
+                'avatar_url' => $user->avatar_url
             ]
         ]);
     }
@@ -276,14 +345,14 @@ class UserController extends Controller
     /**
      * 修改头像 URL
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function updateAvatarUrl(Request $request, User $user)
     {
         $avatarUrl = $request->avatar_url;
 
-        if (is_null($avatarUrl)) {
+        if (!$this->check('string', $avatarUrl)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require avatar url.'
@@ -304,7 +373,7 @@ class UserController extends Controller
             'error_code' => 200,
             'data' => [
                 'user_id' => $user->id,
-                'avatar_url' =>$avatarUrl
+                'avatar_url' => $avatarUrl
             ]
         ]);
     }
@@ -312,7 +381,7 @@ class UserController extends Controller
     /**
      * 生成用户 Token、刷新 Token、Token 过期时间
      *
-     * @param  User  $user
+     * @param  User $user
      * @return array $tokenInfo
      */
     public function refreshToken(User $user)
@@ -355,6 +424,14 @@ class UserController extends Controller
     public function check($action, $data)
     {
         switch ($action) {
+            case 'string':
+                // 字符串为 null 或 ""
+                if (is_null($data) or strlen($data) === 0) {
+                    return false;
+                }
+                return true;
+                break;
+
             case 'account':
                 //登录名应为 6 到 20 位的字母、数字、下划线、中文组合，且以字母或中文作为第一个字符
                 if (preg_match('/^[[:alpha:]\x{4e00}-\x{9fa5}][\-\w\x{4e00}-\x{9fa5}]{2,19}$/u', $data)) {

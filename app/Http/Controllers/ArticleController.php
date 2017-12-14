@@ -10,29 +10,32 @@ use Illuminate\Http\Request;
 class ArticleController extends Controller
 {
     /**
-     * 获取文章，若 all_random=1，返回的都是随机文章，默认值为 1
+     * 获取文章
+     * /users/:id/articles?favorite=0&all_random=1
+     * 若 favorite=1，无视 all_random 参数，返回收藏的文章，默认值为 0
+     * 若 all_random=0，返回推荐的文章
+     * 若 all_random=1，返回的都是随机文章
+     * all_random 默认值为 1
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function get(Request $request, User $user)
     {
         $toReturnArticles = [];
+        $wantFavorite = $request->query('favorite', '0');
         $allRandom = $request->query('all_random', '1');
-        if ($allRandom) {
-            $articles = Article::inRandomOrder()->take(10)->get();
-            foreach ($articles as $key => $article) {
+        if ($wantFavorite == 1) {
+            foreach ($user->favoriteArticles as $key => $article) {
                 $toReturnArticles[$key]['id'] = $article->id;
                 $toReturnArticles[$key]['url'] = $article->url;
-                if ($article->content) {
-                    $toReturnArticles[$key]['need_dedication'] = false;
-                } else {
-                    $toReturnArticles[$key]['need_dedication'] = true;
-                }
             }
-        } else {
+            return response()->json([
+                'error_code' => 200,
+                'articles' => $toReturnArticles
+            ]);
+        } elseif ($allRandom == 0) {
             // 向匹配数据库中取 8 个，随机取 2 个
-            $key = 0;
             /*
             $suggestedArticles = UserArticle::take(8)->get();
             foreach ($suggestedArticles as $suggestedArticle) {
@@ -42,16 +45,18 @@ class ArticleController extends Controller
                 $key++;
             }
             */
-            $randomArticles = Article::inRandomOrder()->take(2)->get();
-            foreach ($randomArticles as $randomArticle) {
-                $toReturnArticles[$key]['id'] = $randomArticle->id;
-                $toReturnArticles[$key]['url'] = $randomArticle->url;
-                if ($randomArticle->content) {
-                    $toReturnArticles[$key]['need_dedication'] = false;
-                } else {
-                    $toReturnArticles[$key]['need_dedication'] = true;
-                }
-                $key++;
+            $articles = Article::inRandomOrder()->take(2)->get();
+        } else {
+            $articles = Article::inRandomOrder()->take(10)->get();
+        }
+
+        foreach ($articles as $key => $article) {
+            $toReturnArticles[$key]['id'] = $article->id;
+            $toReturnArticles[$key]['url'] = $article->url;
+            if ($article->title) {
+                $toReturnArticles[$key]['need_dedication'] = false;
+            } else {
+                $toReturnArticles[$key]['need_dedication'] = true;
             }
         }
 
@@ -64,7 +69,7 @@ class ArticleController extends Controller
     /**
      * 更新文章
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, User $user, Article $article)
@@ -75,8 +80,11 @@ class ArticleController extends Controller
         $title = $request->input('title');
         $content = $request->input('content');
 
-        if (is_null($url) or is_null($publish_time) or is_null($author)
-            or is_null($title) or is_null($content)) {
+        if (!$this->check('string', $url)
+            or !$this->check('string', $publish_time)
+            or !$this->check('string', $author)
+            or !$this->check('string', $title)
+            or !$this->check('string', $content)) {
             return response()->json([
                 'error_code' => 400,
                 'error_message' => 'Require url, publish time, author, title and content.'
@@ -113,5 +121,69 @@ class ArticleController extends Controller
                 'url' => $url
             ]
         ]);
+    }
+
+    /**
+     * 收藏文章
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\User $user
+     * @param  \App\Article $article
+     * @return \Illuminate\Http\Response
+     */
+    public function favorite(Request $request, User $user, Article $article)
+    {
+        $user->favoriteArticles()->attach($article->id);
+
+        return response()->json([
+            'error_code' => 200,
+            'article' => [
+                'id' => $article->id,
+                'url' => $article->url
+            ]
+        ]);
+    }
+
+    /**
+     * 格式检查
+     *
+     * @param string $action
+     * @param mixed $data
+     * @return bool
+     */
+    public function check($action, $data)
+    {
+        switch ($action) {
+            case 'string':
+                // 字符串为 null 或 ""
+                if (is_null($data) or strlen($data) === 0) {
+                    return false;
+                }
+                return true;
+                break;
+
+            case 'bool':
+                // 检查是否 bool 类型
+                if (is_null($data)) {
+                    return 'null';
+                }
+                if (!is_bool($data)) {
+                    return 'NotNullNotBool';
+                }
+                return true;
+                break;
+
+            case 'timestamp':
+                // 字符串为 timestamp
+                if (date('Y-m-d H:i:s', strtotime($data)) === $data) {
+                    return true;
+                }
+                return false;
+                break;
+
+            default:
+
+                break;
+        }
     }
 }

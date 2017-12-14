@@ -47,25 +47,7 @@ class Authenticate
             ]);
         }
 
-        if ($requestSegments[3] == 'access_token') {
-            // Refresh token 验证
-            if ($token != $user->access_refresh_token) {
-                return response()->json([
-                    'error_code' => 401,
-                    'error_message' => 'Wrong access refresh token.'
-                ]);
-            }
-
-            // 检查 Refresh token 过期（14 天过期）
-            if (strtotime($user->access_token_expires_in)
-                + config('app.token_expires_seconds') < time()) {
-                User::refreshToken($user);
-                return response()->json([
-                    'error_code' => 403,
-                    'error_message' => 'Refresh token expired.'
-                ]);
-            }
-        } else {
+        if ($requestSegments[3] != 'access_token') {
             // Token 验证
             if ($token != $user->access_token) {
                 return response()->json([

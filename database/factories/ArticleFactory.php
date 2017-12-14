@@ -8,6 +8,6 @@ $factory->define(App\Article::class, function (Faker $faker) {
         'author' => $faker->name(),
         'publish_time' => $faker->dateTime(),
         'url' => $faker->url(),
-        'content' => $faker->paragraphs(5,true)
+        'content' => $faker->paragraphs(5, true)
     ];
 });

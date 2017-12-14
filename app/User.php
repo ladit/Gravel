@@ -18,24 +18,24 @@ class User extends Model
     }
 
     /**
-     * 关联文章
+     * 关联阅读文章系数表
      *
      * @param
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function articles()
+    public function readArticles()
     {
         return $this->belongsToMany('App\Article', 'users_articles');
     }
 
     /**
-     * 关联情绪
+     * 关联收藏文章表
      *
      * @param
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function emotions()
+    public function favoriteArticles()
     {
-        return $this->belongsToMany('App\Emotion', 'users_emotions');
+        return $this->belongsToMany('App\Article', 'users_favorite_articles');
     }
 }
