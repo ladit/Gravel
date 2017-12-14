@@ -7,14 +7,25 @@ use Illuminate\Database\Eloquent\Model;
 class Article extends Model
 {
     /**
-     * 关联用户
+     * 关联阅读文章用户
      *
      * @param
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function users()
+    public function readUsers()
     {
         return $this->belongsToMany('App\User', 'users_articles');
+    }
+
+    /**
+     * 关联收藏文章用户
+     *
+     * @param
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function favoritedUsers()
+    {
+        return $this->belongsToMany('App\User', 'users_favorite_articles');
     }
 
     /**

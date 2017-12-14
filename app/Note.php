@@ -18,13 +18,13 @@ class Note extends Model
     }
 
     /**
-     * 关联情绪
+     * 关联消息
      *
      * @param
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function emotions()
+    public function notes()
     {
-        return $this->belongsToMany('App\Emotion', 'notes_emotions');
+        return $this->hasMany('App\Message');
     }
 }
