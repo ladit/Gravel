@@ -133,6 +133,13 @@ class ArticleController extends Controller
      */
     public function favorite(Request $request, User $user, Article $article)
     {
+        if ($user->favoriteArticles()->find($article->id)) {
+            return response()->json([
+                'error_code' => 403,
+                'error_message' => 'Already favorited.'
+            ]);
+        }
+
         $user->favoriteArticles()->attach($article->id);
 
         return response()->json([
@@ -140,6 +147,43 @@ class ArticleController extends Controller
             'article' => [
                 'id' => $article->id,
                 'url' => $article->url
+            ]
+        ]);
+    }
+
+    /**
+     * 收集阅读文章时间
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\User $user
+     * @param  \App\Article $article
+     * @return \Illuminate\Http\Response
+     */
+    public function time(Request $request, User $user, Article $article)
+    {
+        $time = $request->input('time');
+
+        if (!$this->check('integer', $time)) {
+            return response()->json([
+                'error_code' => 400,
+                'error_message' => 'Require seconds as time.'
+            ]);
+        }
+
+        $exitstedRecord = $user->readArticles()->find($article->id);
+        if ($exitstedRecord) {
+            $time += $exitstedRecord->pivot->coefficient;
+            $user->readArticles()->updateExistingPivot($article->id, ['coefficient' => $time]);
+        } else {
+            $user->readArticles()->attach($article->id, ['coefficient' => $time]);
+        }
+
+        return response()->json([
+            'error_code' => 200,
+            'article' => [
+                'id' => $article->id,
+                'url' => $article->url,
+                'time' => $time
             ]
         ]);
     }
@@ -160,6 +204,14 @@ class ArticleController extends Controller
                     return false;
                 }
                 return true;
+                break;
+
+            case 'integer':
+                // 检查是否 整数 类型
+                if (preg_match('/^\d+$/', $data)) {
+                    return true;
+                }
+                return false;
                 break;
 
             case 'bool':
