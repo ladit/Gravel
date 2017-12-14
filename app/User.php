@@ -25,7 +25,7 @@ class User extends Model
      */
     public function readArticles()
     {
-        return $this->belongsToMany('App\Article', 'users_articles');
+        return $this->belongsToMany('App\Article', 'users_articles')->withPivot('coefficient')->withTimestamps();
     }
 
     /**
