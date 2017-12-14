@@ -4,13 +4,17 @@ namespace App\Http\Controllers;
 
 use App\User;
 use App\Note;
-use App\Emotion;
+use App\Message;
 use Illuminate\Http\Request;
 
 class NoteController extends Controller
 {
     /**
      * 恢复记录
+     * /users/:id/notes?all=0&year=2017&month=12&day=05
+     * 若 all=1，返回所有记录
+     * 若 all=0，返回 year、month、day 指定的记录，年4位，月日2位
+     * all 默认值为 0
      *
      * @param  \Illuminate\Http\Request $request
      * @param  \App\User $user
@@ -18,15 +22,35 @@ class NoteController extends Controller
      */
     public function restore(Request $request, User $user)
     {
-        $notes = $user->notes()->where([
-            ['is_deleted', '=', '0'],
-            ['is_blocked', '=', '0']
-        ])->get();
         $toReturnNotes = [];
+        $getAll = $request->query('all', '1');
+        if ($getAll == 0) {
+            $year = $request->query('year');
+            $month = $request->query('month');
+            $day = $request->query('day');
+            $dateString = $year.'-'.$month.'-'.$day;
+            if($dateString !== date('Y-m-d', strtotime($dateString))) {
+                return response()->json([
+                    'error_code' => 400,
+                    'error_message' => 'Wrong date format.'
+                ]);
+            }
+            $notes = $user->notes()->where([
+                ['is_deleted', '=', '0'],
+                ['is_blocked', '=', '0']
+            ])->whereDate('created_at', $dateString)->get();
+        }
+        else {
+            $notes = $user->notes()->where([
+                ['is_deleted', '=', '0'],
+                ['is_blocked', '=', '0']
+            ])->get();
+        }
         foreach ($notes as $key => $note) {
             $toReturnNotes[$key]['id'] = $note->id;
             $toReturnNotes[$key]['url'] = $note->url;
             $toReturnNotes[$key]['create_time'] = $note->created_at->toDateTimeString();
+            $toReturnNotes[$key]['upvote_quantity'] = $note->upvote_quantity;
             if ($note->is_shared) {
                 $toReturnNotes[$key]['share'] = true;
             } else {
@@ -210,12 +234,74 @@ class NoteController extends Controller
             $toReturnMeteors[$key]['id'] = $meteor->id;
             $toReturnMeteors[$key]['url'] = $meteor->url;
             $toReturnMeteors[$key]['create_time'] = $meteor->created_at->toDateTimeString();
+            $toReturnMeteors[$key]['upvote_quantity'] = $meteor->upvote_quantity;
             $toReturnMeteors[$key]['content'] = $meteor->content;
         }
 
         return response()->json([
             'error_code' => 200,
             'meteors' => $toReturnMeteors
+        ]);
+    }
+
+    /**
+     * 点亮流星
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\User $user
+     * @param  \App\Note $note
+     * @return \Illuminate\Http\Response
+     */
+    public function upvoteMeteor(Request $request, User $user, Note $note)
+    {
+        $upvoteQuantity = $note->upvote_quantity + 1;
+        $note->upvote_quantity = $upvoteQuantity;
+        $note->save();
+
+        // 新增 Message
+        $message = new Message();
+        $message->note_id = $note->id;
+        $message->user_id = $note->user->id;
+        $message->is_upvoted = 1;
+        $message->save();
+
+        return response()->json([
+            'error_code' => 200,
+            'meteor' => [
+                'id' => $note->id,
+                'upvote_quantity' => $note->upvote_quantity,
+                'url' => $note->url
+            ]
+        ]);
+    }
+
+    /**
+     * 举报流星
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\User $user
+     * @param  \App\Note $note
+     * @return \Illuminate\Http\Response
+     */
+    public function reportMeteor(Request $request, User $user, Note $note)
+    {
+        $note->is_reported = 1;
+        // 管理员处理后取消此标记
+        $note->save();
+
+        // 新增 Message
+        $message = new Message();
+        $message->note_id = $note->id;
+        $message->user_id = $note->user->id;
+        $message->is_reported = 1;
+        $message->save();
+
+        return response()->json([
+            'error_code' => 200,
+            'meteor' => [
+                'id' => $note->id,
+                'url' => $note->url
+            ]
         ]);
     }
 

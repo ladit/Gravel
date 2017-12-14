@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\User;
+use App\Message;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use Qiniu\Auth;
@@ -186,6 +187,52 @@ class UserController extends Controller
                 'qiniu_token' => $upToken,
                 'expire_time' => $tokenExpireTime
             ]
+        ]);
+    }
+
+    /**
+     * 获取新消息
+     * /users/:id/messages?all=0
+     * 若 all=1，返回所有历史消息，默认值为 0
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function getMessages(Request $request, User $user)
+    {
+        $upvotedMessages = [];
+        $reportedMessages = [];
+        $wantAll = $request->query('all', '0');
+        if ($wantAll == 1) {
+            $messages = Message::where('user_id', $user->id)->get();
+        } else {
+            $messages = Message::where([
+                ['user_id', '=', $user->id],
+                ['is_sent', '=', '0'],
+            ])->get();
+        }
+
+        $i = 0;
+        $j = 0;
+        foreach ($messages as $key => $message) {
+            if ($message->is_upvoted == 1) {
+                $upvotedMessages[$i]['note_id'] = $message->note_id;
+                $upvotedMessages[$i]['create_time'] = $message->created_at->toDateTimeString();
+                $i++;
+            }
+            if ($message->is_reported == 1) {
+                $reportedMessages[$j]['note_id'] = $message->note_id;
+                $reportedMessages[$j]['create_time'] = $message->created_at->toDateTimeString();
+                $j++;
+            }
+            $message->is_sent = 1;
+            $message->save();
+        }
+
+        return response()->json([
+            'error_code' => 200,
+            'upvoted' => $upvotedMessages,
+            'reported' => $reportedMessages
         ]);
     }
 
