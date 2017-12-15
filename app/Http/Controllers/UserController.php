@@ -200,8 +200,7 @@ class UserController extends Controller
      */
     public function getMessages(Request $request, User $user)
     {
-        $upvotedMessages = [];
-        $reportedMessages = [];
+        $toReturnMessages = [];
         $wantAll = $request->query('all', '0');
         if ($wantAll == 1) {
             $messages = Message::where('user_id', $user->id)->get();
@@ -212,27 +211,22 @@ class UserController extends Controller
             ])->get();
         }
 
-        $i = 0;
-        $j = 0;
         foreach ($messages as $key => $message) {
-            if ($message->is_upvoted == 1) {
-                $upvotedMessages[$i]['note_id'] = $message->note_id;
-                $upvotedMessages[$i]['create_time'] = $message->created_at->toDateTimeString();
-                $i++;
+            $toReturnMessages[$key]['id'] = $message->id;
+            if ($message->is_upvoted == 1 and $message->is_reported == 0) {
+                $toReturnMessages[$key]['type'] = 'meteor_upvoted';
+            } elseif ($message->is_upvoted == 0 and $message->is_reported == 1) {
+                $toReturnMessages[$key]['type'] = 'meteor_reported';
             }
-            if ($message->is_reported == 1) {
-                $reportedMessages[$j]['note_id'] = $message->note_id;
-                $reportedMessages[$j]['create_time'] = $message->created_at->toDateTimeString();
-                $j++;
-            }
+            $toReturnMessages[$key]['note_id'] = $message->note_id;
+            $toReturnMessages[$key]['create_time'] = $message->created_at->toDateTimeString();
             $message->is_sent = 1;
             $message->save();
         }
 
         return response()->json([
             'error_code' => 200,
-            'upvoted' => $upvotedMessages,
-            'reported' => $reportedMessages
+            'messages' => $toReturnMessages
         ]);
     }
 
