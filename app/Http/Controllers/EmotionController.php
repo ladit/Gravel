@@ -5,10 +5,6 @@ namespace App\Http\Controllers;
 use App\User;
 use App\Note;
 use App\Article;
-use App\Emotion;
-use App\UserEmotion;
-use App\NoteEmotion;
-use App\ArticleEmotion;
 use Illuminate\Http\Request;
 use Storage;
 
@@ -16,83 +12,6 @@ class EmotionController extends Controller
 {
     private $emotions = '';
     private $all = '';
-
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
-    {
-        return Emotion::all(); //bad
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Emotion $emotion
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Emotion $emotion)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Emotion $emotion
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Emotion $emotion)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @param  \App\Emotion $emotion
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Emotion $emotion)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Emotion $emotion
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Emotion $emotion)
-    {
-        //
-    }
-
     /**
      * 情绪分析
      * 情绪表只要根据刚更新article_emotions 或者 note_emotions 来判断要不要插入删除
@@ -177,7 +96,7 @@ class EmotionController extends Controller
                 $this->emotions = $this->emotions . ',' . $result[$i][1];
             }
         }
-        $emotion_id = $this->emotionAnalysis($this->emotions, $this->all);
+        $emotion_id = $this->emotionAnalysis();
         $note_emotions_obj = $note_emotions->where('note_id', $id)->get();
         if (is_null($note_emotions_obj)) {
             # code...
@@ -248,7 +167,7 @@ class EmotionController extends Controller
                 $this->emotions = $this->emotions . ',' . $result[$i][1];
             }
         }
-        $emotion_id = $this->emotionAnalysis($this->emotions, $this->all);
+        $emotion_id = $this->emotionAnalysis();
         if ($article_emotions->where('article_id', $article_data['id'])->count() == 0) {
             # code...
             $article_emotions->article_id = $article_data['id'];
@@ -364,7 +283,7 @@ class EmotionController extends Controller
      * @param  [type] $input_article  [description]  传入一篇所阅读到的文章，对其进行分析 然后推送
      * @return [type]  json   [description] 返回给用户所推送文章
      */
-    public function pushArticle(Request $request,Article $input_article)
+    public function pushArticle(Article $input_article)
     {
         header('content-type:text/html;charset=utf-8');
         $myfile = Storage::get('allkeyword.txt');
@@ -486,23 +405,9 @@ class EmotionController extends Controller
         }
 
         //查找前10篇与当前文章相似的文章 并返回给用户
-        $toReturn = array();
-        $select_article  = Article::whereIn('id',$return_id)->get(['id','url','content']);
-        $key = 0;
-        foreach ($select_article as $key => $value) {
-            # code...
-            $toReturn[$key]['id'] = $value->id;
-            $toReturn[$key]['url'] = $value->url;
-            if ($value->content) {
-                    $toReturn[$key]['need_dedication'] = false;
-                } else {
-                    $toReturn[$key]['need_dedication'] = true;
-            }
-            $key++;
-        }  
-        return response()->json([
-            'error_code' => 200,
-            'meteors' => $toReturn
-        ]);
+        // $toReturn = array();
+        $select_article  = Article::whereIn('id',$return_id)->get();
+
+        return $select_article;
     }
 }
