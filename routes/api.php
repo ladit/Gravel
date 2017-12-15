@@ -104,5 +104,8 @@ Route::middleware('auth')->group(function () {
     // 收集阅读文章时间
     Route::post('/users/{user}/articles/{article}/time', 'ArticleController@time');
 
+    // 上传用于分析的文章 id
+    Route::put('/users/{user}/articles/{article}/read', 'ArticleController@lastRead');
+
     /******** article *********/
 });
