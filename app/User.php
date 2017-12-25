@@ -36,6 +36,6 @@ class User extends Model
      */
     public function favoriteArticles()
     {
-        return $this->belongsToMany('App\Article', 'users_favorite_articles');
+        return $this->belongsToMany('App\Article', 'users_favorite_articles')->withTimestamps();
     }
 }
