@@ -276,6 +276,30 @@ class NoteController extends Controller
     }
 
     /**
+     * 取消点亮流星
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\User $user
+     * @param  \App\Note $note
+     * @return \Illuminate\Http\Response
+     */
+    public function cancelUpvoteMeteor(Request $request, User $user, Note $note)
+    {
+        $upvoteQuantity = $note->upvote_quantity - 1;
+        $note->upvote_quantity = $upvoteQuantity;
+        $note->save();
+
+        return response()->json([
+            'error_code' => 200,
+            'meteor' => [
+                'id' => $note->id,
+                'upvote_quantity' => $note->upvote_quantity,
+                'url' => $note->url
+            ]
+        ]);
+    }
+
+    /**
      * 举报流星
      *
      * @param  \Illuminate\Http\Request $request

@@ -160,6 +160,34 @@ class ArticleController extends Controller
     }
 
     /**
+     * 取消收藏文章
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\User $user
+     * @param  \App\Article $article
+     * @return \Illuminate\Http\Response
+     */
+    public function cancelFavorite(Request $request, User $user, Article $article)
+    {
+        if (!$user->favoriteArticles()->find($article->id)) {
+            return response()->json([
+                'error_code' => 403,
+                'error_message' => 'Not favorited.'
+            ]);
+        }
+
+        $user->favoriteArticles()->detach($article->id);
+
+        return response()->json([
+            'error_code' => 200,
+            'article' => [
+                'id' => $article->id,
+                'url' => $article->url
+            ]
+        ]);
+    }
+
+    /**
      * 收集阅读文章时间
      *
      * @param  \Illuminate\Http\Request $request
