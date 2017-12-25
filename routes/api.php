@@ -80,6 +80,9 @@ Route::middleware('auth')->group(function () {
     // 点亮流星
     Route::put('/users/{user}/meteors/{note}/upvotation', 'NoteController@upvoteMeteor');
 
+    // 取消点亮流星
+    Route::put('/users/{user}/meteors/{note}/cancelUpvotation', 'NoteController@cancelUpvoteMeteor');
+
     // 举报流星
     Route::put('/users/{user}/meteors/{note}/report', 'NoteController@reportMeteor');
 
@@ -100,6 +103,9 @@ Route::middleware('auth')->group(function () {
 
     // 收藏文章
     Route::put('/users/{user}/articles/{article}/favorite', 'ArticleController@favorite');
+
+    // 取消收藏文章
+    Route::put('/users/{user}/articles/{article}/cancelFavorite', 'ArticleController@cancelFavorite');
 
     // 收集阅读文章时间
     Route::post('/users/{user}/articles/{article}/time', 'ArticleController@time');
